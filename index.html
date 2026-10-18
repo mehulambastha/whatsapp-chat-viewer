@@ -32,7 +32,7 @@
 html,body{margin:0;height:100%}
 body{background:var(--bg);color:var(--fg);font:14.2px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans","Noto Sans Devanagari",Helvetica,Arial,sans-serif;overflow:hidden}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
-.app{display:flex;height:100%;max-width:1400px;margin:0 auto;box-shadow:0 0 12px rgba(0,0,0,.15)}
+.app{position:relative;display:flex;height:100%;height:100dvh;max-width:1400px;margin:0 auto;box-shadow:0 0 12px rgba(0,0,0,.15)}
 .chat{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
 header{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--header);color:var(--header-fg);min-height:60px}
 .avatar{width:40px;height:40px;border-radius:50%;background:#dfe5e7;color:#54656f;display:grid;place-items:center;font-weight:600;font-size:18px;flex:none}
@@ -100,12 +100,66 @@ mark{background:var(--mark);color:inherit;border-radius:2px}
 .card p{color:var(--muted);margin:0 0 20px}
 .btn{display:inline-block;background:#008069;color:#fff;padding:10px 22px;border-radius:22px;cursor:pointer}
 .card.over{border-color:#008069}
-#loadMsg{margin-top:16px;color:var(--muted);min-height:1.4em}
+#loadMsg,.askMsg{margin-top:16px;color:var(--muted);min-height:1.4em}
+.askc{min-height:100%;display:grid;place-items:center;padding:16px}
+
+/* media */
+.media{display:block;margin:-3px -4px 4px;border-radius:6px;overflow:hidden}
+.media.img{width:260px;max-width:100%;height:260px;background:rgba(127,127,127,.15)}
+.media.img img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
+.media.sticker{width:140px;height:140px}
+.media.sticker img{width:100%;height:100%;object-fit:contain}
+button.media{color:inherit;font:inherit;text-align:left;cursor:pointer}
+.media.video,.video-el{width:280px;max-width:100%;height:200px;background:#000;display:grid;place-items:center}
+.video-el{object-fit:contain}
+.media.video .play{width:52px;height:52px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center;font-size:20px}
+.media.audio,.media.doc{padding:10px 12px;background:rgba(127,127,127,.12);width:240px;max-width:100%}
+.media.audio .play{float:right}
+.audio-el{display:block;width:260px;max-width:100%;margin:2px 0 6px}
+.cap{margin-top:2px}
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;place-items:center;z-index:30;cursor:zoom-out;padding:16px}
+.lb.open{display:grid}
+.lb img{max-width:100%;max-height:100%;object-fit:contain}
+
+/* chat list (only when the file holds several chats) */
+.list{width:340px;flex:none;display:none;flex-direction:column;background:var(--panel);border-right:1px solid var(--border)}
+.app.multi .list{display:flex}
+.list header{background:var(--header);color:var(--header-fg)}
+.list header .t{flex:1;font-size:18px;font-weight:500}
+.citem{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:10px 16px}
+.citem:hover{background:rgba(127,127,127,.1)}
+.citem.active{background:rgba(127,127,127,.18)}
+.citem .ci{flex:1;min-width:0;border-bottom:1px solid var(--border);padding-bottom:10px}
+.citem .ct{display:flex;justify-content:space-between;gap:8px}
+.citem .cn{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.citem .cd{font-size:12px;color:var(--muted);flex:none}
+.citem .cp{font-size:13.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+#btnBack{display:none}
+.icon[hidden]{display:none!important}
+
+/* view-as picker */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;place-items:center;z-index:20;padding:16px}
+.modal.open{display:grid}
+.mbox{background:var(--panel);color:var(--fg);border-radius:14px;width:100%;max-width:360px;padding:20px 0 8px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+.mbox h2{font-size:18px;font-weight:500;margin:0 20px 4px}
+.mbox p{margin:0 20px 12px;color:var(--muted);font-size:13.5px}
+.mbox .citem .ci{border:0;padding:0}
 
 @media (max-width:760px){
   #msgs{padding:8px 16px 16px}
   .b{max-width:85%}
   .side{position:absolute;inset:0;width:auto;z-index:5}
+  .app.multi .list{position:absolute;inset:0;width:auto;z-index:4;border:0}
+  .app.multi.chatOpen .list{display:none}
+  .app.multi #btnBack{display:grid}
+  header{padding:8px 4px 8px 8px;gap:2px}
+  header .avatar{width:36px;height:36px;font-size:16px;margin-right:6px}
+  .icon{width:38px;height:38px}
+  input[type=search],input[type=password]{font-size:16px!important}
+  .side header,.list header{padding-left:12px}
+  #msgs{padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+  .media.img{width:220px;height:220px}
+  .media.video,.video-el{width:240px;height:180px}
 }
 </style>
 </head>
@@ -115,19 +169,38 @@ mark{background:var(--mark);color:inherit;border-radius:2px}
   <div class="card" id="card">
     <h1>WhatsApp chat viewer</h1>
     <p>Open the <b>.zip</b> or <b>.txt</b> that WhatsApp's “Export chat” created. Everything stays on this device; nothing is uploaded.</p>
-    <label class="btn">Choose file<input type="file" id="file" accept=".zip,.txt" hidden></label>
+    <label class="btn">Choose file<input type="file" id="file" hidden></label>
     <div id="loadMsg">or drop it here</div>
   </div>
 </div>
 
-<div class="app">
+<div class="lb" id="lb"><img id="lbImg" alt=""></div>
+
+<div class="modal" id="asModal">
+  <div class="mbox">
+    <h2>View as…</h2>
+    <p>Messages from this person appear on the right, as yours.</p>
+    <div id="asList"></div>
+  </div>
+</div>
+
+<div class="app" id="app">
+  <aside class="list" id="list">
+    <header>
+      <div class="t">Chats</div>
+      <button class="icon" id="btnAs2" title="View as…"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></button>
+    </header>
+    <div id="chatList" style="overflow-y:auto;flex:1"></div>
+  </aside>
   <div class="chat">
     <header>
+      <button class="icon" id="btnBack" title="Back to chats"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg></button>
       <div class="avatar" id="avatar">?</div>
       <div class="hinfo"><div class="hname" id="hname">Chat</div><div class="hsub" id="hsub"></div></div>
+      <button class="icon" id="btnUnload" title="Close this chat (unload its .zip)" hidden><svg viewBox="0 0 24 24"><path d="M5 17h14v2H5zm7-12L5.33 15h13.34z"/></svg></button>
       <button class="icon" id="btnDate" title="Jump to date"><svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V9h14v11zM7 11h5v5H7z"/></svg></button>
       <button class="icon" id="btnSearch" title="Search messages"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16a6.47 6.47 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></button>
-      <button class="icon" id="btnSwap" title="Swap which side is me"><svg viewBox="0 0 24 24"><path d="M6.99 11 3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg></button>
+      <button class="icon" id="btnSwap" title="View as…"><svg viewBox="0 0 24 24"><path d="M6.99 11 3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg></button>
       <button class="icon" id="btnTheme" title="Toggle dark mode"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.39 5.39 0 0 1-4.4 2.26 5.4 5.4 0 0 1-3.14-9.8A9.8 9.8 0 0 0 12 3z"/></svg></button>
     </header>
     <div class="day" id="floatDay"></div>
@@ -162,34 +235,47 @@ const MONTHS = ["January","February","March","April","May","June","July","August
 const WD = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const NAME_COLORS = ["#06cf9c","#a5b337","#ff8f6b","#53bdeb","#c4532d","#e542a3","#7f66ff","#25d366"];
 
-/* ---------- zip reading (no library; uses DecompressionStream) ---------- */
-async function readZip(buf){
-  const dv = new DataView(buf), u8 = new Uint8Array(buf);
+/* ---------- zip reading (no library; uses DecompressionStream) ----------
+   Lazy: only the directory is read up front; each file is sliced out of the
+   zip when needed, so a large "with media" export stays light on memory. */
+async function openZip(file){
+  const tailLen = Math.min(file.size, 65557);
+  const tail = new Uint8Array(await file.slice(file.size - tailLen).arrayBuffer()), tdv = new DataView(tail.buffer);
   let e = -1;
-  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50){ e = i; break; }
+  for (let i = tail.length - 22; i >= 0; i--) if (tdv.getUint32(i, true) === 0x06054b50){ e = i; break; }
   if (e < 0) throw new Error("Not a valid zip file");
-  const count = dv.getUint16(e + 10, true); let p = dv.getUint32(e + 16, true);
-  const entries = [];
-  for (let k = 0; k < count; k++){
+  const count = tdv.getUint16(e + 10, true), cdSize = tdv.getUint32(e + 12, true), cdOff = tdv.getUint32(e + 16, true);
+  if (cdOff === 0xffffffff) throw new Error("This zip is too large (zip64 isn't supported)");
+  const cd = new Uint8Array(await file.slice(cdOff, cdOff + cdSize).arrayBuffer()), dv = new DataView(cd.buffer);
+  const entries = new Map();
+  for (let k = 0, p = 0; k < count && p + 46 <= cd.length; k++){
     if (dv.getUint32(p, true) !== 0x02014b50) break;
-    const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true);
     const nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
-    const off = dv.getUint32(p + 42, true);
-    const name = new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nlen));
-    entries.push({name, method, csize, off});
+    entries.set(new TextDecoder().decode(cd.subarray(p + 46, p + 46 + nlen)),
+      { method: dv.getUint16(p + 10, true), csize: dv.getUint32(p + 20, true), off: dv.getUint32(p + 42, true) });
     p += 46 + nlen + xlen + clen;
   }
-  const txt = entries.find(x => /\.txt$/i.test(x.name));
-  if (!txt) throw new Error("No .txt chat file inside the zip");
-  const lp = txt.off, start = lp + 30 + dv.getUint16(lp + 26, true) + dv.getUint16(lp + 28, true);
-  const data = u8.subarray(start, start + txt.csize);
-  let out;
-  if (txt.method === 0) out = data;
-  else if (txt.method === 8){
-    const ds = new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
-    out = new Uint8Array(await new Response(ds).arrayBuffer());
-  } else throw new Error("Unsupported zip compression");
-  return {name: txt.name, text: new TextDecoder().decode(out)};
+  return {
+    entries,
+    async blob(name, type = ""){
+      const en = entries.get(name); if (!en) return null;
+      const lh = new DataView(await file.slice(en.off, en.off + 30).arrayBuffer());
+      const start = en.off + 30 + lh.getUint16(26, true) + lh.getUint16(28, true), raw = file.slice(start, start + en.csize);
+      if (en.method === 0) return new Blob([raw], {type});
+      if (en.method !== 8) throw new Error("Unsupported zip compression");
+      const b = await new Response(raw.stream().pipeThrough(new DecompressionStream("deflate-raw"))).blob();
+      return new Blob([b], {type});
+    }
+  };
+}
+// a WhatsApp export: .zip (with or without media, any file name) or a bare .txt
+async function readExport(file){
+  const sig = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+  if (sig[0] !== 0x50 || sig[1] !== 0x4b) return { name: file.name, text: await file.text() };
+  const zip = await openZip(file), names = [...zip.entries.keys()];
+  const name = names.find(n => /^WhatsApp Chat.*\.txt$/i.test(n)) || names.find(n => /\.txt$/i.test(n));
+  if (!name) throw new Error("No chat .txt file inside the zip");
+  return { name, text: await (await zip.blob(name)).text(), zip };
 }
 
 /* ---------- parsing (Android "dd/mm/yy, HH:mm - " and iOS "[dd/mm/yy, HH:mm:ss] ") ---------- */
@@ -271,13 +357,71 @@ function bodyHtml(x){
   if (x === "<Media omitted>") h = `<span class="note">📷 Media omitted</span>`;
   else if (x === "null") h = `<span class="note">👁 View once media</span>`;
   else if (x === "This message was deleted" || x === "You deleted this message") h = `<span class="note">🚫 ${esc(x)}</span>`;
-  else if (/ \(file attached\)$/.test(x)){
-    const f = x.replace(/ \(file attached\)$/, "");
-    h = /\.vcf$/i.test(f) ? `<span class="doc">👤 ${esc(f.replace(/\.vcf$/i, ""))}</span>` : `<span class="doc">📄 ${esc(f)}</span>`;
+  else if (ATTACH.test(x)){
+    const [, a, b, cap] = ATTACH.exec(x), f = a || b, zip = chats[cur]?.zip;
+    if (zip && zip.entries.has(f)) h = mediaHtml(f);
+    else h = /\.vcf$/i.test(f) ? `<span class="doc">👤 ${esc(f.replace(/\.vcf$/i, ""))}</span>` : `<span class="doc">📄 ${esc(f)}</span>`;
+    if (cap) h += `<div class="cap">${fmt(cap)}</div>`;
   }
   else h = fmt(x);
   return {h, edited};
 }
+
+/* ---------- media from "with media" exports ---------- */
+// Android: "IMG-…jpg (file attached)"   iOS: "<attached: 0001-PHOTO-….jpg>"; optional caption on the next lines
+const ATTACH = /^(?:(.+?) \(file attached\)|<attached: (.+?)>)(?:\n([\s\S]*))?$/;
+const MIME = { jpg:"image/jpeg", jpeg:"image/jpeg", png:"image/png", gif:"image/gif", webp:"image/webp",
+  mp4:"video/mp4", "3gp":"video/3gpp", mov:"video/quicktime", webm:"video/webm",
+  opus:"audio/ogg", ogg:"audio/ogg", m4a:"audio/mp4", mp3:"audio/mpeg", aac:"audio/aac", amr:"audio/amr", pdf:"application/pdf" };
+const extOf = f => (f.match(/\.([a-z0-9]+)$/i) || [])[1]?.toLowerCase() || "";
+function mediaKind(f){
+  const e = extOf(f);
+  if (e === "webp" && /^STK-|STICKER/i.test(f)) return "sticker";
+  if (/^(jpe?g|png|gif|webp)$/.test(e)) return "img";
+  if (/^(mp4|3gp|mov|webm|mkv)$/.test(e)) return "video";
+  if (/^(opus|ogg|m4a|mp3|aac|amr|wav)$/.test(e)) return "audio";
+  return "doc";
+}
+function mediaHtml(f){
+  const k = mediaKind(f), a = `data-f="${esc(f)}" data-k="${k}"`;
+  if (k === "img" || k === "sticker") return `<span class="media ${k}" ${a}></span>`;
+  if (k === "video") return `<button class="media video" ${a}><span class="play">▶</span></button>`;
+  if (k === "audio") return `<button class="media audio" ${a}>🎤 Voice message <span class="play">▶</span></button>`;
+  return `<button class="media doc" ${a}>📄 ${esc(f)}</button>`;
+}
+const mediaURLs = new Map();
+function mediaURL(f){
+  const key = cur + "\u0000" + f;
+  if (!mediaURLs.has(key)) mediaURLs.set(key, chats[cur].zip.blob(f, MIME[extOf(f)] || "").then(b => URL.createObjectURL(b)));
+  return mediaURLs.get(key);
+}
+const io = new IntersectionObserver(ents => {
+  for (const en of ents){
+    if (!en.isIntersecting) continue;
+    io.unobserve(en.target);
+    const el = en.target;
+    mediaURL(el.dataset.f).then(u => {
+      const img = new Image(); img.src = u; img.alt = ""; img.decoding = "async";
+      el.replaceChildren(img); el.classList.add("ld");
+    }).catch(() => { el.textContent = "⚠ Couldn't load"; });
+  }
+}, { root: $("msgs"), rootMargin: "600px 0px" });
+function hydrate(root){ root.querySelectorAll(".media.img:not([data-o]), .media.sticker:not([data-o])").forEach(el => { el.dataset.o = 1; io.observe(el); }); }
+$("msgs").addEventListener("click", async e => {
+  const img = e.target.closest(".media.img img");
+  if (img){ $("lbImg").src = img.src; $("lb").classList.add("open"); return; }
+  const el = e.target.closest("button.media"); if (!el) return;
+  const k = el.dataset.k, f = el.dataset.f;
+  el.disabled = true; const label = el.innerHTML; el.innerHTML = "Loading…";
+  try {
+    const u = await mediaURL(f);
+    if (k === "doc"){ const a = document.createElement("a"); a.href = u; a.download = f; a.click(); el.innerHTML = label; el.disabled = false; return; }
+    const m = document.createElement(k === "video" ? "video" : "audio");
+    m.controls = true; m.src = u; m.className = "media " + k + "-el";
+    m.onerror = () => m.replaceWith(Object.assign(document.createElement("a"), { href: u, download: f, textContent: `⬇ Can't play here — download ${f}`, className: "doc" }));
+    el.replaceWith(m); m.play().catch(() => {});
+  } catch { el.innerHTML = "⚠ Couldn't load"; }
+});
 function rowHtml(i){
   const m = M[i], p = M[i - 1];
   let h = `<div class="row" data-i="${i}">`;
@@ -298,7 +442,7 @@ function build(a, b){ let s = ""; for (let i = a; i < b; i++) s += rowHtml(i); r
 function renderAround(center, align){
   lo = Math.max(0, center - CHUNK); hi = Math.min(M.length, center + CHUNK);
   box.innerHTML = build(lo, hi);
-  applyMarks(box);
+  applyMarks(box); hydrate(box);
   if (align === "bottom") box.scrollTop = box.scrollHeight;
   else {
     const el = box.querySelector(`[data-i="${center}"]`);
@@ -314,6 +458,7 @@ function prepend(){
   const re = document.createElement("div"); re.innerHTML = rowHtml(lo); applyMarks(re);
   firstOld.replaceWith(re.firstElementChild);
   box.prepend(...tmp.children);
+  hydrate(box);
   lo = nlo;
   box.scrollTop += box.scrollHeight - oldH;
   trim("bottom");
@@ -323,6 +468,7 @@ function append(){
   const nhi = Math.min(M.length, hi + CHUNK);
   const tmp = document.createElement("div"); tmp.innerHTML = build(hi, nhi); applyMarks(tmp);
   box.append(...tmp.children);
+  hydrate(box);
   hi = nhi;
   trim("top");
 }
@@ -358,7 +504,7 @@ function showFloatDay(){
   fd.classList.add("show");
   clearTimeout(fdTimer); fdTimer = setTimeout(() => fd.classList.remove("show"), 1200);
 }
-$("toBottom").onclick = () => renderAround(M.length - 1, "bottom");
+$("toBottom").onclick = () => M.length && renderAround(M.length - 1, "bottom");
 
 function jumpTo(i){
   renderAround(i);
@@ -395,7 +541,7 @@ function runSearch(){
   query = $("q").value.trim();
   const res = $("results"); res.innerHTML = ""; hits = []; shown = 0;
   if (!query){ $("scount").textContent = "Search for messages in this chat, or tap the calendar to jump to a date."; refreshMarks(); return; }
-  if (!lower) lower = M.map(m => m.x.toLowerCase());
+  if (!lower) lower = chats[cur].lower = M.map(m => m.x.toLowerCase());
   const q = query.toLowerCase();
   for (let i = M.length - 1; i >= 0; i--) if (lower[i].includes(q)) hits.push(i);
   $("scount").textContent = hits.length ? `${hits.length.toLocaleString()} message${hits.length > 1 ? "s" : ""} found` : "No messages found";
@@ -437,7 +583,7 @@ function openDate(){
 }
 $("btnDate").onclick = openDate; $("btnDate2").onclick = openDate;
 $("dateIn").addEventListener("change", e => {
-  if (!e.target.value) return;
+  if (!e.target.value || !M.length) return;
   const [y, mo, d] = e.target.value.split("-").map(Number), key = y * 10000 + mo * 100 + d;
   let a = 0, b = M.length;               // first message with day >= key
   while (a < b){ const c = (a + b) >> 1; if (M[c].day < key) a = c + 1; else b = c; }
@@ -454,11 +600,16 @@ function toast(t){
 /* ---------- header buttons ---------- */
 $("btnSearch").onclick = () => { $("side").classList.add("open"); $("q").focus(); };
 $("btnClose").onclick = () => { $("side").classList.remove("open"); $("q").value = ""; runSearch(); };
-$("btnSwap").onclick = () => {
-  if (senders.length < 2) return;
-  me = (me + 1) % senders.length; save("me", senders[me]);
-  const first = box.querySelector(".row"); renderAround(first ? +first.dataset.i + CHUNK : M.length - 1);
+$("btnSwap").onclick = $("btnAs2").onclick = () => openAs();
+// forget a chat opened from a .zip: drops its messages and frees its media
+$("btnUnload").onclick = () => {
+  const i = cur, c = chats[i];
+  for (const [k, p] of mediaURLs) if (k.startsWith(i + "\u0000")){ p.then(u => URL.revokeObjectURL(u), () => {}); mediaURLs.delete(k); }
+  chats[i] = makeChat({ label: c.label, ask: true });
+  peopleCache = null;
+  renderChatList(); selectChat(i);
 };
+$("btnBack").onclick = () => { $("app").classList.remove("chatOpen"); $("side").classList.remove("open"); };
 $("btnTheme").onclick = () => {
   const dark = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() === "#0b141a";
   document.documentElement.dataset.theme = dark ? "light" : "dark"; save("theme", dark ? "light" : "dark");
@@ -471,37 +622,139 @@ const th = load("theme"); if (th) document.documentElement.dataset.theme = th;
 async function openFile(f){
   $("loadMsg").textContent = "Reading…";
   try {
-    let name = f.name, text;
-    if (/\.zip$/i.test(f.name)){ const z = await readZip(await f.arrayBuffer()); name = z.name; text = z.text; }
-    else text = await f.text();
-    $("loadMsg").textContent = "Parsing…";
-    await new Promise(r => setTimeout(r, 20));
-    M = parse(text); lower = null;
-    if (!M.length) throw new Error("Couldn't find any messages in this file");
-    const other = (name.match(/WhatsApp Chat with (.+?)\.txt$/i) || [])[1];
-    const saved = load("me");
-    me = senders.indexOf(saved);
-    if (me < 0) me = other ? Math.max(0, senders.findIndex(s => s !== other)) : 0;
-    const title = other || senders.filter((_, i) => i !== me).join(", ") || "Chat";
-    $("hname").textContent = title; document.title = title + " · WhatsApp";
-    $("avatar").textContent = [...title.trim()][0]?.toUpperCase() || "?";
-    $("hsub").textContent = `${M.length.toLocaleString()} messages · ${shortDate(M[0].day)} – ${shortDate(M[M.length - 1].day)}`;
-    const di = $("dateIn");
-    di.min = `${Math.floor(M[0].day / 10000)}-${String(Math.floor(M[0].day / 100) % 100).padStart(2,"0")}-${String(M[0].day % 100).padStart(2,"0")}`;
-    const L = M[M.length - 1].day;
-    di.max = `${Math.floor(L / 10000)}-${String(Math.floor(L / 100) % 100).padStart(2,"0")}-${String(L % 100).padStart(2,"0")}`;
-    $("drop").classList.add("hide");
-    renderAround(M.length - 1, "bottom");
+    await openChats([await readExport(f)]);
   } catch (err){ $("loadMsg").textContent = "⚠ " + err.message; console.error(err); }
 }
+
+/* ---------- one or more chats: [{label?, name, text, zip?} | {label, ask:true}] ----------
+   "ask" chats aren't stored in the page; the reader opens that chat's export from their device. */
+let chats = [], cur = -1, meName = null;
+function makeChat(c){
+  if (c.ask) return { label: c.label, ask: true, other: null, M: [], senders: [], lower: null };
+  const msgs = parse(c.text);
+  const other = (c.name.match(/WhatsApp Chat with (.+?)\.txt$/i) || [])[1];
+  return { label: c.label, ask: c.ask, other, M: msgs, senders: senders.slice(), lower: null, zip: c.zip };
+}
+async function openChats(list){
+  $("loadMsg").textContent = "Parsing…";
+  await new Promise(r => setTimeout(r, 20));
+  chats = list.map(makeChat).filter(c => c.ask || c.M.length);
+  if (!chats.some(c => c.M.length)) throw new Error("Couldn't find any messages in this file");
+  peopleCache = null;
+  const people = peopleList();
+  meName = people.includes(load("as")) ? load("as") : null;
+  if (!meName){
+    const c = chats.find(c => c.M.length);
+    meName = c.other ? c.senders.find(s => s !== c.other) : c.senders[0];
+  }
+  $("app").classList.toggle("multi", chats.length > 1);
+  renderChatList();
+  $("drop").classList.add("hide");
+  selectChat(0, chats.length > 1 && innerWidth <= 760);
+  if (people.length > 1 && list.some(c => c.label)) openAs();   // locked bundles ask who's reading
+}
+// people offered in "View as": the two people of the first two-person chat, else everyone
+let peopleCache = null;
+function peopleList(){
+  if (peopleCache) return peopleCache;
+  const count = new Map();
+  const add = c => c.M.forEach(m => m.s >= 0 && count.set(c.senders[m.s], (count.get(c.senders[m.s]) || 0) + 1));
+  const duo = chats.find(c => c.senders.length === 2);
+  (duo ? [duo] : chats).forEach(add);
+  return peopleCache = [...count.entries()].sort((a, b) => b[1] - a[1]).map(e => e[0]);
+}
+function previewText(x){
+  const a = ATTACH.exec(x);
+  if (a){ const k = mediaKind(a[1] || a[2]); return ({img:"📷 Photo", sticker:"Sticker", video:"🎥 Video", audio:"🎤 Voice message"})[k] || "📄 " + (a[1] || a[2]); }
+  return x === "<Media omitted>" ? "📷 Media" : x.split("\n")[0];
+}
+$("msgs").addEventListener("change", async e => {
+  const inp = e.target.closest(".askIn"); if (!inp || !inp.files[0]) return;
+  const msg = box.querySelector(".askMsg"), i = cur;
+  msg.textContent = "Reading…";
+  try {
+    const c = makeChat({ label: chats[i].label, ...(await readExport(inp.files[0])) });
+    if (!c.M.length) throw new Error("Couldn't find any messages in this file");
+    c.ask = true; chats[i] = c;
+    renderChatList(); selectChat(i);
+  } catch (err){ msg.textContent = "⚠ " + err.message; console.error(err); }
+});
+const chatTitle = c => c.label || c.other || c.senders.filter(s => s !== meName).join(", ") || "Chat";
+const initial = s => [...s.trim()][0]?.toUpperCase() || "?";
+function renderChatList(){
+  $("chatList").innerHTML = chats.map((c, i) => {
+    const last = c.M[c.M.length - 1], t = chatTitle(c);
+    if (!last) return `<button class="citem${i === cur ? " active" : ""}" data-c="${i}"><div class="avatar">${esc(initial(t))}</div>
+      <div class="ci"><div class="ct"><span class="cn">${esc(t)}</span></div><div class="cp">🔒 Open its .zip to view</div></div></button>`;
+    const prev = (last.s >= 0 && c.senders.length > 2 ? (c.senders[last.s] === meName ? "You" : c.senders[last.s]) + ": " : "") + previewText(last.x);
+    return `<button class="citem${i === cur ? " active" : ""}" data-c="${i}"><div class="avatar">${esc(initial(t))}</div>
+      <div class="ci"><div class="ct"><span class="cn">${esc(t)}</span><span class="cd">${shortDate(last.day)}</span></div>
+      <div class="cp">${esc(prev.slice(0, 80))}</div></div></button>`;
+  }).join("");
+}
+$("chatList").addEventListener("click", e => { const b = e.target.closest(".citem"); if (b) selectChat(+b.dataset.c); });
+const isoDay = day => `${Math.floor(day / 10000)}-${String(Math.floor(day / 100) % 100).padStart(2,"0")}-${String(day % 100).padStart(2,"0")}`;
+function selectChat(i, stayOnList){
+  cur = i; const c = chats[i];
+  M = c.M; senders = c.senders; lower = c.lower; me = meIndex();
+  const title = chatTitle(c);
+  $("hname").textContent = title; document.title = title;
+  $("avatar").textContent = initial(title);
+  document.querySelectorAll(".citem[data-c]").forEach(b => b.classList.toggle("active", +b.dataset.c === i));
+  if (!stayOnList) $("app").classList.add("chatOpen");
+  $("side").classList.remove("open");
+  $("btnUnload").hidden = !(c.ask && M.length);
+  if (!M.length){
+    $("hsub").textContent = "Not stored in this page";
+    lo = hi = 0;
+    box.innerHTML = `<div class="askc"><div class="card"><h1>${esc(title)}</h1>
+      <p>This chat isn't saved inside this page. Choose its exported <b>.zip</b> (with or without media) — it's opened on this device only, nothing is uploaded.</p>
+      <label class="btn">Choose file<input type="file" class="askIn" hidden></label><div class="askMsg"></div></div></div>`;
+    return;
+  }
+  $("hsub").textContent = `${M.length.toLocaleString()} messages · ${shortDate(M[0].day)} – ${shortDate(M[M.length - 1].day)}`;
+  $("dateIn").min = isoDay(M[0].day); $("dateIn").max = isoDay(M[M.length - 1].day);
+  $("q").value = ""; query = ""; $("results").innerHTML = "";
+  $("scount").textContent = "Search for messages in this chat, or tap the calendar to jump to a date.";
+  renderAround(M.length - 1, "bottom");
+}
+// a chat exported from the other phone may name "me" differently: in a two-person
+// chat, if the other person is recognised, the remaining sender is me
+function meIndex(){
+  const i = senders.indexOf(meName);
+  if (i >= 0 || senders.length !== 2) return i;
+  const ppl = peopleList(), other = ppl.length === 2 ? ppl.find(p => p !== meName) : null;
+  const j = other ? senders.indexOf(other) : -1;
+  return j >= 0 ? 1 - j : -1;
+}
+function openAs(){
+  const people = peopleList();
+  $("asList").innerHTML = people.map(p => `<button class="citem${p === meName ? " active" : ""}" data-p="${esc(p)}">
+    <div class="avatar">${esc(initial(p))}</div><div class="ci"><div class="cn">${esc(p)}</div></div></button>`).join("");
+  $("asModal").classList.add("open");
+}
+$("asModal").addEventListener("click", e => {
+  const b = e.target.closest("[data-p]");
+  if (b){
+    meName = b.dataset.p; save("as", meName);
+    me = meIndex();
+    const first = box.querySelector(".row");
+    renderAround(first ? Math.min(M.length - 1, +first.dataset.i + CHUNK) : M.length - 1, first ? undefined : "bottom");
+    renderChatList();
+  }
+  if (b || e.target === $("asModal")) $("asModal").classList.remove("open");
+});
 $("file").addEventListener("change", e => e.target.files[0] && openFile(e.target.files[0]));
 const card = $("card");
 addEventListener("dragover", e => { e.preventDefault(); card.classList.add("over"); });
 addEventListener("dragleave", () => card.classList.remove("over"));
 addEventListener("drop", e => { e.preventDefault(); card.classList.remove("over"); const f = e.dataTransfer.files[0]; if (f) openFile(f); });
+$("lb").onclick = () => { $("lb").classList.remove("open"); $("lbImg").removeAttribute("src"); };
 addEventListener("keydown", e => {
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "f" && M.length){ e.preventDefault(); $("btnSearch").click(); }
-  if (e.key === "Escape" && $("side").classList.contains("open")) $("btnClose").click();
+  if (e.key === "Escape" && $("lb").classList.contains("open")) $("lb").click();
+  else if (e.key === "Escape" && $("asModal").classList.contains("open")) $("asModal").classList.remove("open");
+  else if (e.key === "Escape" && $("side").classList.contains("open")) $("btnClose").click();
 });
 </script>
 </body>
