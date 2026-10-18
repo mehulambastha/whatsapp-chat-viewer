@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WhatsApp Chat Viewer</title>
+<style>
+:root{
+  --bg:#efeae2; --panel:#f0f2f5; --header:#008069; --header-fg:#fff;
+  --in:#ffffff; --out:#d9fdd3; --fg:#111b21; --muted:#667781; --tick:#53bdeb;
+  --chip:#ffffff; --sys:#ffeecd; --sys-fg:#54656f; --border:#d1d7db;
+  --mark:#ffd279; --flash:rgba(0,128,105,.25); --link:#027eb5; --pattern:rgba(0,0,0,.035);
+  --input:#ffffff;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b141a; --panel:#111b21; --header:#202c33; --header-fg:#e9edef;
+    --in:#202c33; --out:#005c4b; --fg:#e9edef; --muted:#8696a0; --tick:#53bdeb;
+    --chip:#182229; --sys:#182229; --sys-fg:#ffd279; --border:#2a3942;
+    --mark:#8a6d1d; --flash:rgba(0,168,132,.35); --link:#53bdeb; --pattern:rgba(255,255,255,.025);
+    --input:#2a3942;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b141a; --panel:#111b21; --header:#202c33; --header-fg:#e9edef;
+  --in:#202c33; --out:#005c4b; --fg:#e9edef; --muted:#8696a0; --tick:#53bdeb;
+  --chip:#182229; --sys:#182229; --sys-fg:#ffd279; --border:#2a3942;
+  --mark:#8a6d1d; --flash:rgba(0,168,132,.35); --link:#53bdeb; --pattern:rgba(255,255,255,.025);
+  --input:#2a3942;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--fg);font:14.2px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans","Noto Sans Devanagari",Helvetica,Arial,sans-serif;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+.app{display:flex;height:100%;max-width:1400px;margin:0 auto;box-shadow:0 0 12px rgba(0,0,0,.15)}
+.chat{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
+header{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--header);color:var(--header-fg);min-height:60px}
+.avatar{width:40px;height:40px;border-radius:50%;background:#dfe5e7;color:#54656f;display:grid;place-items:center;font-weight:600;font-size:18px;flex:none}
+.hinfo{flex:1;min-width:0}
+.hname{font-size:16px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hsub{font-size:12.5px;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;flex:none}
+.icon:hover{background:rgba(127,127,127,.18)}
+.icon svg{width:22px;height:22px;fill:currentColor}
+#msgs{flex:1;overflow-y:auto;overflow-anchor:none;padding:8px 6% 16px;
+  background-color:var(--bg);
+  background-image:radial-gradient(var(--pattern) 1.2px,transparent 1.2px),radial-gradient(var(--pattern) 1.2px,transparent 1.2px);
+  background-size:28px 28px;background-position:0 0,14px 14px}
+.row{display:flex;flex-direction:column}
+.day{align-self:center;margin:10px 0 8px;padding:5px 12px;background:var(--chip);color:var(--muted);border-radius:8px;font-size:12.5px;box-shadow:0 1px .5px rgba(11,20,26,.13);text-transform:uppercase}
+.sys{align-self:center;max-width:85%;margin:6px 0;padding:6px 12px;background:var(--sys);color:var(--sys-fg);border-radius:8px;font-size:12.5px;text-align:center;box-shadow:0 1px .5px rgba(11,20,26,.13)}
+.b{position:relative;max-width:min(65%,560px);padding:6px 7px 8px 9px;margin:1px 0;border-radius:7.5px;box-shadow:0 1px .5px rgba(11,20,26,.13);word-wrap:break-word;overflow-wrap:anywhere;white-space:pre-wrap}
+.b.in{align-self:flex-start;background:var(--in)}
+.b.out{align-self:flex-end;background:var(--out)}
+.b.first{margin-top:8px}
+.b.first.in{border-top-left-radius:0}
+.b.first.out{border-top-right-radius:0}
+.b.first.in::before,.b.first.out::before{content:"";position:absolute;top:0;width:8px;height:13px}
+.b.first.in::before{left:-8px;background:var(--in);clip-path:polygon(0 0,100% 0,100% 100%)}
+.b.first.out::before{right:-8px;background:var(--out);clip-path:polygon(0 0,100% 0,0 100%)}
+.who{font-size:12.8px;font-weight:600;margin-bottom:2px;white-space:normal}
+.meta{float:right;margin:6px 0 -6px 10px;font-size:11px;color:var(--muted);white-space:nowrap;position:relative;top:4px}
+.meta .tk{color:var(--tick);margin-left:3px}
+.note{font-style:italic;color:var(--muted)}
+.doc{display:inline-flex;gap:8px;align-items:center;padding:8px 10px;border-radius:6px;background:rgba(127,127,127,.12)}
+.b a{color:var(--link)}
+.b code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+mark{background:var(--mark);color:inherit;border-radius:2px}
+.flash{animation:flash 2s ease-out}
+@keyframes flash{0%,40%{box-shadow:0 0 0 400px var(--flash) inset}100%{box-shadow:0 1px .5px rgba(11,20,26,.13)}}
+#floatDay{position:absolute;top:72px;left:50%;transform:translateX(-50%);z-index:3;pointer-events:none;opacity:0;transition:opacity .3s}
+#floatDay.show{opacity:1}
+#toBottom{position:absolute;right:24px;bottom:24px;width:42px;height:42px;border-radius:50%;background:var(--chip);color:var(--muted);box-shadow:0 1px 3px rgba(0,0,0,.3);display:none;place-items:center;z-index:3}
+#toBottom svg{width:24px;height:24px;fill:currentColor}
+
+/* search panel */
+.side{width:380px;flex:none;display:none;flex-direction:column;background:var(--panel);border-left:1px solid var(--border)}
+.side.open{display:flex}
+.side header{background:var(--panel);color:var(--fg);gap:16px}
+.side header .t{flex:1;font-size:16px}
+.sbox{padding:8px 12px;display:flex;gap:6px;align-items:center;border-bottom:1px solid var(--border)}
+.sbox .f{flex:1;display:flex;align-items:center;gap:8px;background:var(--input);border-radius:8px;padding:0 10px}
+.sbox svg{width:18px;height:18px;fill:var(--muted);flex:none}
+.sbox input[type=search]{flex:1;border:0;outline:0;background:none;color:var(--fg);font:inherit;padding:8px 0;min-width:0}
+.sbox input[type=date]{position:absolute;opacity:0;pointer-events:none;width:0;height:0}
+.datewrap{position:relative}
+.scount{padding:10px 16px;font-size:13px;color:var(--muted)}
+#results{flex:1;overflow-y:auto}
+.res{display:block;width:100%;text-align:left;padding:10px 16px;border-bottom:1px solid var(--border)}
+.res:hover{background:rgba(127,127,127,.1)}
+.res .d{font-size:12.5px;color:var(--muted)}
+.res .s{margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.more{display:block;margin:12px auto;padding:8px 16px;border-radius:18px;color:#008069;border:1px solid var(--border)}
+
+/* loader */
+.drop{position:fixed;inset:0;display:grid;place-items:center;background:var(--panel);z-index:10;padding:16px}
+.drop.hide{display:none}
+.card{max-width:460px;width:100%;text-align:center;padding:36px 24px;border:2px dashed var(--border);border-radius:16px;background:var(--bg)}
+.card h1{font-size:22px;font-weight:500;margin:0 0 8px}
+.card p{color:var(--muted);margin:0 0 20px}
+.btn{display:inline-block;background:#008069;color:#fff;padding:10px 22px;border-radius:22px;cursor:pointer}
+.card.over{border-color:#008069}
+#loadMsg{margin-top:16px;color:var(--muted);min-height:1.4em}
+
+@media (max-width:760px){
+  #msgs{padding:8px 16px 16px}
+  .b{max-width:85%}
+  .side{position:absolute;inset:0;width:auto;z-index:5}
+}
+</style>
+</head>
+<body>
+
+<div class="drop" id="drop">
+  <div class="card" id="card">
+    <h1>WhatsApp chat viewer</h1>
+    <p>Open the <b>.zip</b> or <b>.txt</b> that WhatsApp's “Export chat” created. Everything stays on this device; nothing is uploaded.</p>
+    <label class="btn">Choose file<input type="file" id="file" accept=".zip,.txt" hidden></label>
+    <div id="loadMsg">or drop it here</div>
+  </div>
+</div>
+
+<div class="app">
+  <div class="chat">
+    <header>
+      <div class="avatar" id="avatar">?</div>
+      <div class="hinfo"><div class="hname" id="hname">Chat</div><div class="hsub" id="hsub"></div></div>
+      <button class="icon" id="btnDate" title="Jump to date"><svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V9h14v11zM7 11h5v5H7z"/></svg></button>
+      <button class="icon" id="btnSearch" title="Search messages"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16a6.47 6.47 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></button>
+      <button class="icon" id="btnSwap" title="Swap which side is me"><svg viewBox="0 0 24 24"><path d="M6.99 11 3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg></button>
+      <button class="icon" id="btnTheme" title="Toggle dark mode"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.39 5.39 0 0 1-4.4 2.26 5.4 5.4 0 0 1-3.14-9.8A9.8 9.8 0 0 0 12 3z"/></svg></button>
+    </header>
+    <div class="day" id="floatDay"></div>
+    <div id="msgs"></div>
+    <button id="toBottom" title="Scroll to latest"><svg viewBox="0 0 24 24"><path d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg></button>
+  </div>
+
+  <aside class="side" id="side">
+    <header>
+      <button class="icon" id="btnClose" title="Close"><svg viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+      <div class="t">Search messages</div>
+    </header>
+    <div class="sbox">
+      <div class="f"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16a6.47 6.47 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input type="search" id="q" placeholder="Search…" autocomplete="off"></div>
+      <div class="datewrap">
+        <button class="icon" id="btnDate2" title="Search by date"><svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V9h14v11zM7 11h5v5H7z"/></svg></button>
+        <input type="date" id="dateIn">
+      </div>
+    </div>
+    <div class="scount" id="scount">Search for messages in this chat, or tap the calendar to jump to a date.</div>
+    <div id="results"></div>
+  </aside>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+let M = [];            // {t:ms, day:int, tm:'12:05', s:senderIdx|-1, x:text}
+let senders = [], me = 0, lower = null, query = "";
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const WD = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const NAME_COLORS = ["#06cf9c","#a5b337","#ff8f6b","#53bdeb","#c4532d","#e542a3","#7f66ff","#25d366"];
+
+/* ---------- zip reading (no library; uses DecompressionStream) ---------- */
+async function readZip(buf){
+  const dv = new DataView(buf), u8 = new Uint8Array(buf);
+  let e = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50){ e = i; break; }
+  if (e < 0) throw new Error("Not a valid zip file");
+  const count = dv.getUint16(e + 10, true); let p = dv.getUint32(e + 16, true);
+  const entries = [];
+  for (let k = 0; k < count; k++){
+    if (dv.getUint32(p, true) !== 0x02014b50) break;
+    const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true);
+    const nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+    const off = dv.getUint32(p + 42, true);
+    const name = new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nlen));
+    entries.push({name, method, csize, off});
+    p += 46 + nlen + xlen + clen;
+  }
+  const txt = entries.find(x => /\.txt$/i.test(x.name));
+  if (!txt) throw new Error("No .txt chat file inside the zip");
+  const lp = txt.off, start = lp + 30 + dv.getUint16(lp + 26, true) + dv.getUint16(lp + 28, true);
+  const data = u8.subarray(start, start + txt.csize);
+  let out;
+  if (txt.method === 0) out = data;
+  else if (txt.method === 8){
+    const ds = new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+    out = new Uint8Array(await new Response(ds).arrayBuffer());
+  } else throw new Error("Unsupported zip compression");
+  return {name: txt.name, text: new TextDecoder().decode(out)};
+}
+
+/* ---------- parsing (Android "dd/mm/yy, HH:mm - " and iOS "[dd/mm/yy, HH:mm:ss] ") ---------- */
+const RX = /^\[?(\d{1,4})[\/.\-](\d{1,2})[\/.\-](\d{1,4}),?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?(?:[\s ]*([AaPp])\.?\s?[Mm]\.?)?\]?\s(?:-\s)?(.*)$/;
+function parse(text){
+  text = text.replace(/^﻿/, "").replace(/[‎‏]/g, "");
+  const lines = text.split(/\r?\n/), raw = [];
+  let aBig = 0, bBig = 0;
+  for (const l of lines){
+    const m = RX.exec(l);
+    if (m){
+      const a = +m[1], b = +m[2];
+      if (a > 12 && m[1].length <= 2) aBig++;
+      if (b > 12) bBig++;
+      raw.push({m, body: m[8]});
+    } else if (raw.length) raw[raw.length - 1].body += "\n" + l;
+  }
+  const ymd = raw.length && raw[0].m[1].length === 4;
+  const dmy = !ymd && (aBig > 0 || bBig === 0);
+  const counts = new Map(), out = [];
+  for (const {m, body} of raw){
+    let d, mo, y;
+    if (ymd){ y = +m[1]; mo = +m[2]; d = +m[3]; }
+    else if (dmy){ d = +m[1]; mo = +m[2]; y = +m[3]; }
+    else { mo = +m[1]; d = +m[2]; y = +m[3]; }
+    if (y < 100) y += 2000;
+    let h = +m[4]; const mi = +m[5], ap = m[7];
+    if (ap){ const pm = /p/i.test(ap); if (pm && h < 12) h += 12; if (!pm && h === 12) h = 0; }
+    const tm = ap ? `${((h + 11) % 12) + 1}:${m[5]} ${h >= 12 ? "pm" : "am"}` : `${String(h).padStart(2,"0")}:${m[5]}`;
+    const t = new Date(y, mo - 1, d, h, mi).getTime();
+    let s = null, x = body;
+    const i = body.indexOf(": ");
+    if (i > 0 && body.lastIndexOf(":", i - 1) === -1 && i < 80){ s = body.slice(0, i); x = body.slice(i + 2); }
+    if (s !== null) counts.set(s, (counts.get(s) || 0) + 1);
+    out.push({t, day: y * 10000 + mo * 100 + d, tm, s, x});
+  }
+  senders = [...counts.keys()];
+  const idx = new Map(senders.map((n, i) => [n, i]));
+  for (const o of out) o.s = o.s === null ? -1 : idx.get(o.s);
+  return out;
+}
+
+/* ---------- rendering ---------- */
+const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const URL_RX = /\b(https?:\/\/[^\s<]+[^\s<.,;:!?)\]'"])/g;
+function fmt(s){
+  // split out URLs, format the rest with WhatsApp markdown
+  let res = "", last = 0;
+  for (const m of s.matchAll(URL_RX)){
+    res += md(s.slice(last, m.index)) + `<a href="${esc(m[0])}" target="_blank" rel="noopener noreferrer">${esc(m[0])}</a>`;
+    last = m.index + m[0].length;
+  }
+  return res + md(s.slice(last));
+}
+function md(s){
+  s = esc(s);
+  s = s.replace(/```([\s\S]+?)```/g, "<code>$1</code>");
+  s = s.replace(/(^|[\s(])\*(?=\S)([^*\n]+?)\*(?=$|[\s).,!?:;])/g, "$1<b>$2</b>");
+  s = s.replace(/(^|[\s(])_(?=\S)([^_\n]+?)_(?=$|[\s).,!?:;])/g, "$1<i>$2</i>");
+  s = s.replace(/(^|[\s(])~(?=\S)([^~\n]+?)~(?=$|[\s).,!?:;])/g, "$1<s>$2</s>");
+  return s;
+}
+function dayLabel(day){
+  const y = Math.floor(day / 10000), mo = Math.floor(day / 100) % 100, d = day % 100;
+  const dt = new Date(y, mo - 1, d), now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diff = Math.round((today - dt) / 864e5);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Yesterday";
+  if (diff > 1 && diff < 7) return WD[dt.getDay()];
+  return `${d} ${MONTHS[mo - 1]} ${y}`;
+}
+const shortDate = day => `${String(day % 100).padStart(2,"0")}/${String(Math.floor(day / 100) % 100).padStart(2,"0")}/${Math.floor(day / 10000)}`;
+
+function bodyHtml(x){
+  let edited = false;
+  if (x.endsWith("<This message was edited>")){ edited = true; x = x.slice(0, -25).trimEnd(); }
+  let h;
+  if (x === "<Media omitted>") h = `<span class="note">📷 Media omitted</span>`;
+  else if (x === "null") h = `<span class="note">👁 View once media</span>`;
+  else if (x === "This message was deleted" || x === "You deleted this message") h = `<span class="note">🚫 ${esc(x)}</span>`;
+  else if (/ \(file attached\)$/.test(x)){
+    const f = x.replace(/ \(file attached\)$/, "");
+    h = /\.vcf$/i.test(f) ? `<span class="doc">👤 ${esc(f.replace(/\.vcf$/i, ""))}</span>` : `<span class="doc">📄 ${esc(f)}</span>`;
+  }
+  else h = fmt(x);
+  return {h, edited};
+}
+function rowHtml(i){
+  const m = M[i], p = M[i - 1];
+  let h = `<div class="row" data-i="${i}">`;
+  if (!p || p.day !== m.day) h += `<div class="day">${dayLabel(m.day)}</div>`;
+  if (m.s < 0){ h += `<div class="sys">${fmt(m.x)}</div></div>`; return h; }
+  const out = m.s === me;
+  const first = !p || p.s !== m.s || p.day !== m.day;
+  const {h: body, edited} = bodyHtml(m.x);
+  const who = (!out && first && senders.length > 2) ? `<div class="who" style="color:${NAME_COLORS[m.s % NAME_COLORS.length]}">${esc(senders[m.s])}</div>` : "";
+  h += `<div class="b ${out ? "out" : "in"}${first ? " first" : ""}">${who}${body}<span class="meta">${edited ? "Edited " : ""}${m.tm}${out ? '<span class="tk">✓✓</span>' : ""}</span></div></div>`;
+  return h;
+}
+const box = $("msgs");
+let lo = 0, hi = 0, busy = false;
+const CHUNK = 150, MAXROWS = 600;
+
+function build(a, b){ let s = ""; for (let i = a; i < b; i++) s += rowHtml(i); return s; }
+function renderAround(center, align){
+  lo = Math.max(0, center - CHUNK); hi = Math.min(M.length, center + CHUNK);
+  box.innerHTML = build(lo, hi);
+  applyMarks(box);
+  if (align === "bottom") box.scrollTop = box.scrollHeight;
+  else {
+    const el = box.querySelector(`[data-i="${center}"]`);
+    if (el){ box.scrollTop = el.offsetTop - box.clientHeight / 2 + el.offsetHeight / 2; }
+  }
+}
+function prepend(){
+  if (lo === 0) return;
+  const nlo = Math.max(0, lo - CHUNK), oldH = box.scrollHeight;
+  // the old first row may lose its date chip / tail once its predecessor is rendered
+  const firstOld = box.firstElementChild;
+  const tmp = document.createElement("div"); tmp.innerHTML = build(nlo, lo); applyMarks(tmp);
+  const re = document.createElement("div"); re.innerHTML = rowHtml(lo); applyMarks(re);
+  firstOld.replaceWith(re.firstElementChild);
+  box.prepend(...tmp.children);
+  lo = nlo;
+  box.scrollTop += box.scrollHeight - oldH;
+  trim("bottom");
+}
+function append(){
+  if (hi >= M.length) return;
+  const nhi = Math.min(M.length, hi + CHUNK);
+  const tmp = document.createElement("div"); tmp.innerHTML = build(hi, nhi); applyMarks(tmp);
+  box.append(...tmp.children);
+  hi = nhi;
+  trim("top");
+}
+function trim(side){
+  while (hi - lo > MAXROWS){
+    if (side === "bottom"){ box.lastElementChild.remove(); hi--; }
+    else {
+      const el = box.firstElementChild, h = el.offsetHeight;
+      el.remove(); lo++; box.scrollTop -= h;
+    }
+  }
+}
+box.addEventListener("scroll", () => {
+  if (!busy){
+    busy = true;
+    requestAnimationFrame(() => {
+      if (box.scrollTop < 1200) prepend();
+      else if (box.scrollHeight - box.scrollTop - box.clientHeight < 1200) append();
+      busy = false;
+    });
+  }
+  showFloatDay();
+  $("toBottom").style.display = (hi < M.length || box.scrollHeight - box.scrollTop - box.clientHeight > 600) ? "grid" : "none";
+}, {passive: true});
+
+let fdTimer;
+function showFloatDay(){
+  const r = box.getBoundingClientRect();
+  const el = document.elementFromPoint(r.left + r.width / 2, r.top + 30)?.closest?.(".row");
+  if (!el) return;
+  const fd = $("floatDay");
+  fd.textContent = dayLabel(M[+el.dataset.i].day);
+  fd.classList.add("show");
+  clearTimeout(fdTimer); fdTimer = setTimeout(() => fd.classList.remove("show"), 1200);
+}
+$("toBottom").onclick = () => renderAround(M.length - 1, "bottom");
+
+function jumpTo(i){
+  renderAround(i);
+  const b = box.querySelector(`[data-i="${i}"] .b, [data-i="${i}"] .sys`);
+  if (b){ b.classList.remove("flash"); void b.offsetWidth; b.classList.add("flash"); }
+}
+
+/* highlight current search term inside rendered bubbles */
+function applyMarks(root){
+  if (!query) return;
+  const q = query.toLowerCase();
+  root.querySelectorAll(".b, .sys").forEach(b => {
+    const w = document.createTreeWalker(b, NodeFilter.SHOW_TEXT, {acceptNode: n => n.parentElement.closest(".meta") ? 2 : 1});
+    const nodes = []; while (w.nextNode()) nodes.push(w.currentNode);
+    for (const n of nodes){
+      const s = n.nodeValue, ls = s.toLowerCase();
+      let k = ls.indexOf(q); if (k < 0) continue;
+      const frag = document.createDocumentFragment(); let last = 0;
+      while (k >= 0){
+        frag.append(s.slice(last, k));
+        const mk = document.createElement("mark"); mk.textContent = s.slice(k, k + q.length); frag.append(mk);
+        last = k + q.length; k = ls.indexOf(q, last);
+      }
+      frag.append(s.slice(last)); n.replaceWith(frag);
+    }
+  });
+}
+
+/* ---------- search ---------- */
+let hits = [], shown = 0, sTimer;
+const PAGE = 200;
+$("q").addEventListener("input", () => { clearTimeout(sTimer); sTimer = setTimeout(runSearch, 220); });
+function runSearch(){
+  query = $("q").value.trim();
+  const res = $("results"); res.innerHTML = ""; hits = []; shown = 0;
+  if (!query){ $("scount").textContent = "Search for messages in this chat, or tap the calendar to jump to a date."; refreshMarks(); return; }
+  if (!lower) lower = M.map(m => m.x.toLowerCase());
+  const q = query.toLowerCase();
+  for (let i = M.length - 1; i >= 0; i--) if (lower[i].includes(q)) hits.push(i);
+  $("scount").textContent = hits.length ? `${hits.length.toLocaleString()} message${hits.length > 1 ? "s" : ""} found` : "No messages found";
+  showMore(); refreshMarks();
+}
+function refreshMarks(){
+  box.querySelectorAll("mark").forEach(m => m.replaceWith(m.textContent));
+  box.normalize(); applyMarks(box);
+}
+function snippet(x, q){
+  const k = x.toLowerCase().indexOf(q.toLowerCase());
+  let a = Math.max(0, k - 40); const s = (a > 0 ? "…" : "") + x.slice(a, k + q.length + 120);
+  const off = (a > 0 ? 1 : 0) + (k - a);
+  return esc(s.slice(0, off)) + "<mark>" + esc(s.slice(off, off + q.length)) + "</mark>" + esc(s.slice(off + q.length));
+}
+function showMore(){
+  const res = $("results"); res.querySelector(".more")?.remove();
+  let h = "";
+  for (const i of hits.slice(shown, shown + PAGE)){
+    const m = M[i];
+    const who = m.s < 0 ? "" : (m.s === me ? "You: " : esc(senders[m.s]) + ": ");
+    h += `<button class="res" data-i="${i}"><div class="d">${shortDate(m.day)} · ${m.tm}</div><div class="s">${who}${snippet(m.x.replace(/\s*<This message was edited>$/, ""), query)}</div></button>`;
+  }
+  shown += PAGE;
+  if (shown < hits.length) h += `<button class="more">Show more results</button>`;
+  res.insertAdjacentHTML("beforeend", h);
+}
+$("results").addEventListener("click", e => {
+  if (e.target.closest(".more")) return showMore();
+  const r = e.target.closest(".res"); if (!r) return;
+  jumpTo(+r.dataset.i);
+  if (innerWidth <= 760) $("side").classList.remove("open");
+});
+
+/* ---------- date jump ---------- */
+function openDate(){
+  const d = $("dateIn");
+  try { d.showPicker(); } catch { d.style.cssText = "position:static;opacity:1;pointer-events:auto;width:auto;height:auto"; d.focus(); }
+}
+$("btnDate").onclick = openDate; $("btnDate2").onclick = openDate;
+$("dateIn").addEventListener("change", e => {
+  if (!e.target.value) return;
+  const [y, mo, d] = e.target.value.split("-").map(Number), key = y * 10000 + mo * 100 + d;
+  let a = 0, b = M.length;               // first message with day >= key
+  while (a < b){ const c = (a + b) >> 1; if (M[c].day < key) a = c + 1; else b = c; }
+  if (a >= M.length) a = M.length - 1;
+  jumpTo(a);
+  if (M[a].day !== key) toast(`No messages on ${shortDate(key)} — showing ${shortDate(M[a].day)}`);
+  if (innerWidth <= 760) $("side").classList.remove("open");
+});
+function toast(t){
+  const fd = $("floatDay"); fd.textContent = t; fd.classList.add("show");
+  clearTimeout(fdTimer); fdTimer = setTimeout(() => fd.classList.remove("show"), 3000);
+}
+
+/* ---------- header buttons ---------- */
+$("btnSearch").onclick = () => { $("side").classList.add("open"); $("q").focus(); };
+$("btnClose").onclick = () => { $("side").classList.remove("open"); $("q").value = ""; runSearch(); };
+$("btnSwap").onclick = () => {
+  if (senders.length < 2) return;
+  me = (me + 1) % senders.length; save("me", senders[me]);
+  const first = box.querySelector(".row"); renderAround(first ? +first.dataset.i + CHUNK : M.length - 1);
+};
+$("btnTheme").onclick = () => {
+  const dark = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() === "#0b141a";
+  document.documentElement.dataset.theme = dark ? "light" : "dark"; save("theme", dark ? "light" : "dark");
+};
+function save(k, v){ try { localStorage.setItem("wav_" + k, v); } catch {} }
+function load(k){ try { return localStorage.getItem("wav_" + k); } catch { return null; } }
+const th = load("theme"); if (th) document.documentElement.dataset.theme = th;
+
+/* ---------- file loading ---------- */
+async function openFile(f){
+  $("loadMsg").textContent = "Reading…";
+  try {
+    let name = f.name, text;
+    if (/\.zip$/i.test(f.name)){ const z = await readZip(await f.arrayBuffer()); name = z.name; text = z.text; }
+    else text = await f.text();
+    $("loadMsg").textContent = "Parsing…";
+    await new Promise(r => setTimeout(r, 20));
+    M = parse(text); lower = null;
+    if (!M.length) throw new Error("Couldn't find any messages in this file");
+    const other = (name.match(/WhatsApp Chat with (.+?)\.txt$/i) || [])[1];
+    const saved = load("me");
+    me = senders.indexOf(saved);
+    if (me < 0) me = other ? Math.max(0, senders.findIndex(s => s !== other)) : 0;
+    const title = other || senders.filter((_, i) => i !== me).join(", ") || "Chat";
+    $("hname").textContent = title; document.title = title + " · WhatsApp";
+    $("avatar").textContent = [...title.trim()][0]?.toUpperCase() || "?";
+    $("hsub").textContent = `${M.length.toLocaleString()} messages · ${shortDate(M[0].day)} – ${shortDate(M[M.length - 1].day)}`;
+    const di = $("dateIn");
+    di.min = `${Math.floor(M[0].day / 10000)}-${String(Math.floor(M[0].day / 100) % 100).padStart(2,"0")}-${String(M[0].day % 100).padStart(2,"0")}`;
+    const L = M[M.length - 1].day;
+    di.max = `${Math.floor(L / 10000)}-${String(Math.floor(L / 100) % 100).padStart(2,"0")}-${String(L % 100).padStart(2,"0")}`;
+    $("drop").classList.add("hide");
+    renderAround(M.length - 1, "bottom");
+  } catch (err){ $("loadMsg").textContent = "⚠ " + err.message; console.error(err); }
+}
+$("file").addEventListener("change", e => e.target.files[0] && openFile(e.target.files[0]));
+const card = $("card");
+addEventListener("dragover", e => { e.preventDefault(); card.classList.add("over"); });
+addEventListener("dragleave", () => card.classList.remove("over"));
+addEventListener("drop", e => { e.preventDefault(); card.classList.remove("over"); const f = e.dataTransfer.files[0]; if (f) openFile(f); });
+addEventListener("keydown", e => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "f" && M.length){ e.preventDefault(); $("btnSearch").click(); }
+  if (e.key === "Escape" && $("side").classList.contains("open")) $("btnClose").click();
+});
+</script>
+</body>
+</html>
